@@ -125,6 +125,8 @@ class Machine:
             for i in range(n):
                 if debug: print( self.show_tape() )
                 if not self.step(): break
+        from itertools import chain
+        return chain(self.l, reversed(self.r))
 
 
 
@@ -141,8 +143,14 @@ if __name__ == "__main__":
     """
 
     n = int(sys.argv[1])
+    try: debug = sys.argv[2] == "d"
+    except IndexError: debug = False
     machine = Machine(program, [], [1] * n)
-    machine.run()
+    coll = machine.run(debug=debug)
+    n=0
+    for i in coll:
+        if i == "1": n+=1
+    print(n)
 
 
 
