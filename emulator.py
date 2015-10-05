@@ -57,16 +57,32 @@ class Machine:
         """Generate an efficient Python command from the 3 command fields"""
         if   d in {'r', 'R',  '1'}:
             def command():
-                self.l.append(o)
-                if len(self.r) > 1: self.r.pop()
-                else:               self.r[-1] = BLANK  # r should never be []
-                self.s = s1
+                # Optimize for the case where neither state nor input changes:
+                if self.s == s1:
+                    orig_i = self.r[-1]
+                    while self.r[-1] == orig_i:
+                        self.l.append(o)
+                        self.r.pop()
+                else:
+                    self.l.append(o)
+                    self.r.pop()
+                    self.s = s1
+                if len(self.r) < 1: self.r.append(BLANK)  # r should never be []
         elif d in {'l', 'L', '-1'}:
             def command():
-                self.r[-1] = o
-                if len(self.l) > 0: self.r.append(self.l.pop())
-                else:               self.r.append(BLANK)
-                self.s = s1
+                # Optimize for the case where neither state nor input changes:
+                if self.s == s1:
+                    orig_i = self.r[-1]
+                    while self.r[-1] == orig_i:
+                        self.r[-1] = o
+                        if len(self.l) > 0: self.r.append(self.l.pop())
+                        else:               self.r.append(BLANK)
+                        self.s = s1
+                else:
+                    self.r[-1] = o
+                    if len(self.l) > 0: self.r.append(self.l.pop())
+                    else:               self.r.append(BLANK)
+                    self.s = s1
         elif d in {'x', 'X',  '0'}:
             def command():
                 self.r[-1] = o
