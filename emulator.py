@@ -100,9 +100,9 @@ class Machine:
         if action == "__halt__":
             return None
         else:
-            self.h, m, self.s = action
+            self.r[-1], m, self.s = action
             m()
-            return (self.s, m)
+            return True
 
     def run(self, n=-1):
         if 0 > n:
