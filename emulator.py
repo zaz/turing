@@ -104,11 +104,14 @@ class Machine:
             m()
             return True
 
-    def run(self, n=-1):
+    def run(self, n=-1, debug=False):
+        if debug: print( self.show_tape() )
         if 0 > n:
-            while self.step(): pass
+            while self.step():
+                if debug: print( self.show_tape() )
         else:
             for i in range(n):
+                if debug: print( self.show_tape() )
                 if not self.step(): break
 
 
