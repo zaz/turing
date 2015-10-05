@@ -75,13 +75,13 @@ class Machine:
                     orig_i = self.r[-1]
                     while self.r[-1] == orig_i:
                         self.r[-1] = o
-                        if len(self.l) > 0: self.r.append(self.l.pop())
-                        else:               self.r.append(BLANK)
+                        try: self.r.append(self.l.pop())
+                        except IndexError: self.r.append(BLANK)
                         self.s = s1
                 else:
                     self.r[-1] = o
-                    if len(self.l) > 0: self.r.append(self.l.pop())
-                    else:               self.r.append(BLANK)
+                    try: self.r.append(self.l.pop())
+                    except IndexError: self.r.append(BLANK)
                     self.s = s1
         elif d in {'x', 'X',  '0'}:
             def command():
