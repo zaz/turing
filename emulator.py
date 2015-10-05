@@ -24,7 +24,7 @@ def get_last_padded(coll, n, pad=None):
 
 class Machine:
     """A Turing machine"""
-    def __init__(self, code="", l=[], r=[], s="0"):
+    def __init__(self, code="", l=[], r=[" "], s="0"):
         self.s = s  # state
         # Tape to the left of head. Last item is just to the left of head:
         self.l = [str(i) for i in l]
@@ -36,17 +36,6 @@ class Machine:
         # Non-existent keys are mapped to "__halt__":
         self.program = defaultdict(self.halt_symbol)
         self.load(code)
-
-    # Allow us to use h to refer to the head position (last item in r)
-    @property
-    def h(self):
-        if len(self.r) > 0: return self.r[-1]
-        else: return BLANK
-
-    @h.setter
-    def h(self, v):
-        if len(self.r) > 0: self.r[-1] = v
-        else: self.r.append(v)
 
     def get_tape(self):
         return get_last_padded(self.l, self.context, " ") \
@@ -64,16 +53,33 @@ class Machine:
         if fields[3] not in {'r', 'R', '1', 'l', 'L', '-1', 'x', 'X', '0'}:
             raise InvalidDirection(fields[3])
 
+    def create_command(self, o, d, s1):
+        """Generate an efficient Python command from the 3 command fields"""
+        if   d in {'r', 'R',  '1'}:
+            def command():
+                self.l.append(o)
+                if len(self.r) > 1: self.r.pop()
+                else:               self.r[-1] = BLANK  # r should never be []
+                self.s = s1
+        elif d in {'l', 'L', '-1'}:
+            def command():
+                self.r[-1] = o
+                if len(self.l) > 0: self.r.append(self.l.pop())
+                else:               self.r.append(BLANK)
+                self.s = s1
+        elif d in {'x', 'X',  '0'}:
+            def command():
+                self.r[-1] = o
+                self.s = s1
+        return command
+
     def parse(self, line):
         fields = re.split("\s+", line.strip())
         if fields == [""]: return None
         if fields[0][0] in COMMENT_CHARACTERS: return None
         self.check(fields)
         s0, i, o, d, s1 = fields
-        if   d in {'r', 'R',  '1'}: m = self.move_r
-        elif d in {'l', 'L', '-1'}: m = self.move_l
-        elif d in {'x', 'X',  '0'}: m = self.move_x
-        return {(s0, i): (o, m, s1)}
+        return {(s0, i): self.create_command(o, d, s1)}
 
     def load(self, code):
         for n, line in enumerate(code.split("\n")):
@@ -86,22 +92,12 @@ class Machine:
 
     def halt_symbol(self): return "__halt__"
 
-    # Move head: right, left, nowhere
-    def move_r(self):
-        if len(self.r) > 0: self.l.append(self.r.pop())
-        else:               self.l.append(BLANK)
-    def move_l(self):
-        if len(self.l) > 0: self.r.append(self.l.pop())
-        else:               self.r.append(BLANK)
-    def move_x(): pass
-
     def step(self):
-        action = self.program[(self.s, self.h)]
-        if action == "__halt__":
+        command = self.program[(self.s, self.r[-1])]
+        if command == "__halt__":
             return None
         else:
-            self.r[-1], m, self.s = action
-            m()
+            command()
             return True
 
     def run(self, n=-1, debug=False):
