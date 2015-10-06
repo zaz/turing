@@ -3,9 +3,10 @@ from collections import defaultdict
 from itertools import chain
 import re
 CONTEXT = 15
-COMMENT_CHARACTERS = "#"
 BLANK = "_"
 TALLY = "1"
+COMMENT_CHARACTERS = "#;"
+COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
 
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
@@ -92,9 +93,9 @@ class Machine:
         return command
 
     def parse(self, line):
+        line = re.sub(COMMENT_MATCHER, "", line)
         fields = re.split("\s+", line.strip())
         if fields == [""]: return None
-        if fields[0][0] in COMMENT_CHARACTERS: return None
         self.check(fields)
         s0, i, o, d, s1 = fields
         return {(s0, i): self.create_command(o, d, s1)}
