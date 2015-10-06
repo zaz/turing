@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from collections import defaultdict
+from itertools import chain
 import re
 CONTEXT = 15
 COMMENT_CHARACTERS = "#"
 BLANK = "_"
+TALLY = "1"
 
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
@@ -125,9 +127,42 @@ class Machine:
             for i in range(n):
                 if debug: print( self.show_tape() )
                 if not self.step(): break
-        from itertools import chain
+
+    def tape(self):
         return chain(self.l, reversed(self.r))
 
+    def tape_str(self):
+        tape = "".join([str(i) for i in self.tape()])
+        return tape.strip("_ ")
+
+    def count(self, tally):
+        """Count the number of consecutive tallys on tape, starting at far left"""
+        coll = self.tape()
+        n=0
+        for i in coll:
+            if i == tally: n+=1
+            if i != tally: break
+        return n
+
+
+def test(program, test_cases, limit_steps=-1):
+    """Map each item of test_cases to its output when program is run on it.
+    If a dict is passed, its values will be discarded and the keys mapped as
+    above, so a program can be tested for correctness with:
+
+        test_dict == test(program, test_dict)
+    """
+    output = {}
+    for test in test_cases:
+        # If the input in an integer, convert it into tally:
+        if   type(test) is int: inp = "".join([TALLY] * test)
+        elif type(test) is str: inp = test
+        else: raise TypeError("Test input type should be int or str")
+        machine = Machine(program, [], inp)
+        machine.run(limit_steps)
+        if   type(test) is int: output[test] = machine.count(TALLY)
+        elif type(test) is str: output[test] = machine.tape_str()
+    return output
 
 
 if __name__ == "__main__":
@@ -142,15 +177,8 @@ if __name__ == "__main__":
     2 1 1 r 2
     """
 
-    n = int(sys.argv[1])
-    try: debug = sys.argv[2] == "d"
-    except IndexError: debug = False
-    machine = Machine(program, [], [1] * n)
-    coll = machine.run(debug=debug)
-    n=0
-    for i in coll:
-        if i == "1": n+=1
-    print(n)
+    args = [int(i) for i in sys.argv[1:]]
+    print( test(program, set(args)) )
 
 
 
