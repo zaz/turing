@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 from collections import defaultdict
-from itertools import chain
+from itertools import chain, count
 import re
 CONTEXT = 15
 BLANK = "_"
 TALLY = "1"
 COMMENT_CHARACTERS = "#;"
 COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
+OPTIMIZE = True
 
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
@@ -59,29 +60,33 @@ class Machine:
         if fields[3] not in {'r', 'R', '1', 'l', 'L', '-1', 'x', 'X', '0'}:
             raise InvalidDirection(fields[3])
 
-    def create_command(self, o, d, s1):
+    def zoom(self, direction, i, o):
+        """Efficiently perform operations that repeatedly move the cursor in a
+        particular direction."""
+        if i == o:
+            for n in count(self.h, direction):
+                if self.t[n] != i: break
+        else:
+            for n in count(self.h, direction):
+                if self.t[n] != i: break
+                else: self.t[n] = o
+        self.h = n
+
+    def create_command(self, s0, i, o, d, s1):
         """Generate an efficient Python command from the 3 command fields"""
         if   d in {'r', 'R',  '1'}:
-            def command():
-                # Optimize for the case where neither state nor input changes:
-                if self.s == s1:
-                    orig_i = self.t[self.h]
-                    while self.t[self.h] == orig_i:
-                        self.t[self.h] = o
-                        self.h += 1
-                else:
+            # Optimize for the case where neither state nor input changes:
+            if OPTIMIZE and s0 == s1: command = lambda: self.zoom(1, i, o)
+            else:
+                def command():
                     self.t[self.h] = o
                     self.h += 1
                     self.s = s1
         elif d in {'l', 'L', '-1'}:
-            def command():
-                # Optimize for the case where neither state nor input changes:
-                if self.s == s1:
-                    orig_i = self.t[self.h]
-                    while self.t[self.h] == orig_i:
-                        self.t[self.h] = o
-                        self.h -= 1
-                else:
+            # Optimize for the case where neither state nor input changes:
+            if OPTIMIZE and s0 == s1: command = lambda: self.zoom(-1, i, o)
+            else:
+                def command():
                     self.t[self.h] = o
                     self.h -= 1
                     self.s = s1
@@ -97,7 +102,7 @@ class Machine:
         if fields == [""]: return None
         self.check(fields)
         s0, i, o, d, s1 = fields
-        return {(s0, i): self.create_command(o, d, s1)}
+        return {(s0, i): self.create_command(s0, i, o, d, s1)}
 
     def load(self, code):
         for n, line in enumerate(code.split("\n")):
