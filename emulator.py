@@ -35,7 +35,7 @@ class Machine:
         for n, i in enumerate(t):
             self.t[n] = i
         # Number of positions show when we view the tape:
-        self.context = 15
+        self.context = CONTEXT
         # A map of (state, input) -> command_fn
         # Non-existent keys are mapped to "__halt__":
         self.program = defaultdict(self.halt_symbol)
