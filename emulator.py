@@ -27,22 +27,25 @@ def get_last_padded(coll, n, pad=None):
 
 class Machine:
     """A Turing machine"""
-    def __init__(self, code="", l=[], r=[" "], s="0"):
+    def __init__(self, code="", t=[" "], h=0, s="0"):
         self.s = s  # state
-        # Tape to the left of head. Last item is just to the left of head:
-        self.l = [str(i) for i in l]
-        # Tape to the right of head in reverse (last item is head):
-        self.r = [str(i) for i in reversed(r)]
+        self.h = h  # position of head
+        self.t = defaultdict(self.blank_symbol)
+        for n, i in enumerate(t):
+            self.t[n] = i
         # Number of positions show when we view the tape:
         self.context = 15
-        # A map of (state, item) -> (new_item, movement_fn, new_state)
+        # A map of (state, input) -> command_fn
         # Non-existent keys are mapped to "__halt__":
         self.program = defaultdict(self.halt_symbol)
         self.load(code)
 
     def get_tape(self):
-        return get_last_padded(self.l, self.context, " ") \
-                + list(reversed(get_last_padded(self.r, self.context + 1, " ")))
+        section = range(self.h - self.context, self.h + self.context)
+        output = []
+        for n in section:
+            output.append(self.t[n])
+        return output
 
     def show_tape(self): return " ".join(self.get_tape())
 
@@ -62,33 +65,29 @@ class Machine:
             def command():
                 # Optimize for the case where neither state nor input changes:
                 if self.s == s1:
-                    orig_i = self.r[-1]
-                    while self.r[-1] == orig_i:
-                        self.l.append(o)
-                        self.r.pop()
+                    orig_i = self.t[self.h]
+                    while self.t[self.h] == orig_i:
+                        self.t[self.h] = o
+                        self.h += 1
                 else:
-                    self.l.append(o)
-                    self.r.pop()
+                    self.t[self.h] = o
+                    self.h += 1
                     self.s = s1
-                if len(self.r) < 1: self.r.append(BLANK)  # r should never be []
         elif d in {'l', 'L', '-1'}:
             def command():
                 # Optimize for the case where neither state nor input changes:
                 if self.s == s1:
-                    orig_i = self.r[-1]
-                    while self.r[-1] == orig_i:
-                        self.r[-1] = o
-                        try: self.r.append(self.l.pop())
-                        except IndexError: self.r.append(BLANK)
-                        self.s = s1
+                    orig_i = self.t[self.h]
+                    while self.t[self.h] == orig_i:
+                        self.t[self.h] = o
+                        self.h -= 1
                 else:
-                    self.r[-1] = o
-                    try: self.r.append(self.l.pop())
-                    except IndexError: self.r.append(BLANK)
+                    self.t[self.h] = o
+                    self.h -= 1
                     self.s = s1
         elif d in {'x', 'X',  '0'}:
             def command():
-                self.r[-1] = o
+                self.t[self.h] = o
                 self.s = s1
         return command
 
@@ -110,9 +109,10 @@ class Machine:
                 raise type(e)(str(e) + " on line " + str(n)) from None
 
     def halt_symbol(self): return "__halt__"
+    def blank_symbol(self): return BLANK
 
     def step(self):
-        command = self.program[(self.s, self.r[-1])]
+        command = self.program[(self.s, self.t[self.h])]
         if command == "__halt__":
             return None
         else:
@@ -130,17 +130,15 @@ class Machine:
                 if not self.step(): break
 
     def tape(self):
-        return chain(self.l, reversed(self.r))
-
-    def tape_str(self):
-        tape = "".join([str(i) for i in self.tape()])
-        return tape.strip("_ ")
+        mystr = ""
+        for k in sorted(self.t):
+            mystr += self.t[k]
+        return mystr.strip("_ ")
 
     def count(self, tally):
         """Count the number of consecutive tallys on tape, starting at far left"""
-        coll = self.tape()
         n=0
-        for i in coll:
+        for i in self.tape():
             if i == tally: n+=1
             if i != tally: break
         return n
@@ -159,10 +157,10 @@ def test(program, test_cases, limit_steps=-1):
         if   type(test) is int: inp = "".join([TALLY] * test)
         elif type(test) is str: inp = test
         else: raise TypeError("Test input type should be int or str")
-        machine = Machine(program, [], inp)
+        machine = Machine(program, inp)
         machine.run(limit_steps)
         if   type(test) is int: output[test] = machine.count(TALLY)
-        elif type(test) is str: output[test] = machine.tape_str()
+        elif type(test) is str: output[test] = machine.tape()
     return output
 
 
