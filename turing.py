@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from collections import defaultdict
-from itertools import chain, count
+from itertools import chain
 import re
 CONTEXT = 15
 BLANK = "_"
@@ -8,6 +8,7 @@ TALLY = "1"
 COMMENT_CHARACTERS = "#;"
 COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
 OPTIMIZE = True
+ZOOM_LIMIT = 99999
 
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
@@ -40,6 +41,7 @@ class Machine:
         # Non-existent keys are mapped to "__halt__":
         self.program = defaultdict(self.halt_symbol)
         self.load(code)
+        self.steps = 0  # track number of steps performed
 
     def get_tape(self):
         section = range(self.h - self.context, self.h + self.context)
@@ -63,13 +65,16 @@ class Machine:
     def zoom(self, direction, i, o):
         """Efficiently perform operations that repeatedly move the cursor in a
         particular direction."""
+        limit = self.h + (ZOOM_LIMIT * direction)
         if i == o:
-            for n in count(self.h, direction):
+            for n in range(self.h, limit, direction):
                 if self.t[n] != i: break
         else:
-            for n in count(self.h, direction):
+            for n in range(self.h, limit, direction):
                 if self.t[n] != i: break
                 else: self.t[n] = o
+        # 1 zoom step takes ~1/3 of the time of a normal step:
+        self.steps += abs(n - self.h) / 3
         self.h = n
 
     def create_command(self, s0, i, o, d, s1):
@@ -124,15 +129,12 @@ class Machine:
             command()
             return True
 
-    def run(self, n=-1, debug=False):
+    def run(self, n=1e309, debug=False):
         if debug: print( self.show_tape() )
-        if 0 > n:
-            while self.step():
-                if debug: print( self.show_tape() )
-        else:
-            for i in range(n):
-                if debug: print( self.show_tape() )
-                if not self.step(): break
+        while self.steps < n:
+            if debug: print( self.show_tape() )
+            if not self.step(): break
+            self.steps += 1
 
     def tape(self):
         mystr = ""
