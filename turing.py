@@ -5,6 +5,8 @@ import re
 CONTEXT = 15
 BLANK = "_"
 TALLY = "1"
+MOVE_RIGHT_SYMBOLS = {'r', 'R',  '1', '→', '»'}
+MOVE_LEFT_SYMBOLS = {'l', 'L', '-1', '←' '«'}
 COMMENT_CHARACTERS = "#;"
 COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
 OPTIMIZE = True
@@ -58,10 +60,6 @@ class Machine:
         if   len(fields) > 5: raise TooManyFields(len(fields))
         elif len(fields) < 5: raise TooFewFields(len(fields))
 
-        # Raise exception if a field in invalid:
-        if fields[3] not in {'r', 'R', '1', 'l', 'L', '-1', 'x', 'X', '0'}:
-            raise InvalidDirection(fields[3])
-
     def zoom(self, direction, i, o):
         """Efficiently perform operations that repeatedly move the cursor in a
         particular direction."""
@@ -79,7 +77,7 @@ class Machine:
 
     def create_command(self, s0, i, o, d, s1):
         """Generate an efficient Python command from the 3 command fields"""
-        if   d in {'r', 'R',  '1'}:
+        if d in MOVE_RIGHT_SYMBOLS:
             # Optimize for the case where neither state nor input changes:
             if OPTIMIZE and s0 == s1: command = lambda: self.zoom(1, i, o)
             else:
@@ -87,7 +85,7 @@ class Machine:
                     self.t[self.h] = o
                     self.h += 1
                     self.s = s1
-        elif d in {'l', 'L', '-1'}:
+        elif d in MOVE_LEFT_SYMBOLS:
             # Optimize for the case where neither state nor input changes:
             if OPTIMIZE and s0 == s1: command = lambda: self.zoom(-1, i, o)
             else:
@@ -95,7 +93,7 @@ class Machine:
                     self.t[self.h] = o
                     self.h -= 1
                     self.s = s1
-        elif d in {'x', 'X',  '0'}:
+        else:
             def command():
                 self.t[self.h] = o
                 self.s = s1
