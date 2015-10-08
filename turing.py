@@ -11,10 +11,12 @@ COMMENT_CHARACTERS = "#;"
 COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
 WILDCARD = "*"
 OPTIMIZE = True
-ZOOM_LIMIT = 99999
+ZOOM_LIMIT = 9999
 
 class TooManySteps(Exception):
     """The Turing machine exceeded the maximum number of steps."""
+class NeverHalts(TooManySteps): pass
+
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
     pass
@@ -81,6 +83,9 @@ class Machine:
                 else: self.t[n] = o
         if reached_limit:
             n += direction
+            # We need to add direction before checking because t[n] was
+            # implicitly added to the defaultdict when we checked it earlier.
+            if i == BLANK and n not in self.t: raise NeverHalts
         # 1 zoom step takes ~1/3 of the time of a normal step:
         self.steps += abs(n - self.h) / 3
         self.h = n
@@ -108,9 +113,12 @@ class Machine:
                     self.h -= 1
                     self.s = s1
         else:
-            def command():
-                self.t[self.h] = o
-                self.s = s1
+            if i == o and s0 == s1:
+                def command(): raise NeverHalts
+            else:
+                def command():
+                    self.t[self.h] = o
+                    self.s = s1
         return command
 
     def parse(self, line):

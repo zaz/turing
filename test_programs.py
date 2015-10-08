@@ -3,12 +3,12 @@ import pytest
 import turing
 from os import listdir, path
 PROGRAM_PATH = "programs"
-LIMIT = 999999
+LIMIT = 99999
 
 # TODO: Allow things such as blanks and 0s to be interchangeable
 tests = {
     "2-1s": { "": "11" },
-    "double": { 0: 0,  1: 2,  18: 36,  7: 14,  6: 12,  400: 800 },
+    "double": { 0: 0,  1: 2,  18: 36,  7: 14,  6: 12,  99: 198 },
     "double-with-0": { "": "",  "1": "1_1",  "1"*18: "1"*18+"_"+"1"*18,
         "1"*7: "1"*7+"_"+"1"*7,  "1"*6: "1"*6+"_"+"1"*6 },
     "switch": { "": "",  "1": "0",  "0": "1",  "01": "10",  "10": "01",
