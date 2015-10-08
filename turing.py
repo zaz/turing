@@ -67,13 +67,20 @@ class Machine:
         """Efficiently perform operations that repeatedly move the cursor in a
         particular direction."""
         limit = self.h + (ZOOM_LIMIT * direction)
+        reached_limit = True
         if i == o:
             for n in range(self.h, limit, direction):
-                if self.t[n] != i: break
+                if self.t[n] != i:
+                    reached_limit = False
+                    break
         else:
             for n in range(self.h, limit, direction):
-                if self.t[n] != i: break
+                if self.t[n] != i:
+                    reached_limit = False
+                    break
                 else: self.t[n] = o
+        if reached_limit:
+            n += direction
         # 1 zoom step takes ~1/3 of the time of a normal step:
         self.steps += abs(n - self.h) / 3
         self.h = n
