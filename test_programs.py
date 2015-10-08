@@ -3,7 +3,7 @@ import pytest
 import turing
 from os import listdir, path
 PROGRAM_PATH = "programs"
-LIMIT = 9999999
+LIMIT = 999999
 
 # TODO: Allow things such as blanks and 0s to be interchangeable
 tests = {
@@ -13,27 +13,34 @@ tests = {
         "1"*7: "1"*7+"_"+"1"*7,  "1"*6: "1"*6+"_"+"1"*6 },
     "switch": { "": "",  "1": "0",  "0": "1",  "01": "10",  "10": "01",
         "11": "00",  "1010": "0101",  "111010111": "000101000"},
-    # TODO: If 1, program should not halt:
-    "halt-iff-0": { "0": "0" },
+    "halt-iff-0": { "0": "0",  "1": turing.TooManySteps },
     "unary-to-binary": { "": "",  "1": "1",  "11": "10",  "111": "11",
         "1111": "100",  "11111": "101",  "1"*19: "10011" }
 }
 
+def is_exception(obj):
+    return hasattr(obj, "__call__") and isinstance(obj(), Exception)
+
 def run_on(program, test_cases, limit_steps=LIMIT):
     """Map each item of test_cases to its output when program is run on it.
-    If a dict is passed, its values will be discarded and the keys mapped as
-    above, so a program can be tested for correctness with:
-
-        test_dict == test(program, test_dict)
+    Will return the same dict if every test passes.
     """
+    assert type(test_cases) is dict
     output = {}
     for test in test_cases:
+        expected = test_cases[test]
         # If the input in an integer, convert it into tally:
         if   type(test) is int: inp = "".join([turing.TALLY] * test)
         elif type(test) is str: inp = test
         else: raise TypeError("Test input type should be int or str")
         machine = turing.Machine(program, inp)
-        machine.run(limit_steps)
+        if is_exception(expected):
+            with pytest.raises(expected) as e:
+                machine.run(limit_steps)
+            output[test] = expected
+            continue
+        else:
+            machine.run(limit_steps)
         if   type(test) is int: output[test] = machine.count(turing.TALLY)
         elif type(test) is str: output[test] = machine.tape()
     return output
