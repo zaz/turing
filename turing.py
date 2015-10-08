@@ -91,7 +91,8 @@ class Machine:
         if o == WILDCARD: o = i
         if d in MOVE_RIGHT_SYMBOLS:
             # Optimize for the case where neither state nor input changes:
-            if OPTIMIZE and s0 == s1: command = lambda: self.zoom(1, i, o)
+            if OPTIMIZE and s0 == s1:
+                def command(): self.zoom(1, i, o)
             else:
                 def command():
                     self.t[self.h] = o
@@ -99,7 +100,8 @@ class Machine:
                     self.s = s1
         elif d in MOVE_LEFT_SYMBOLS:
             # Optimize for the case where neither state nor input changes:
-            if OPTIMIZE and s0 == s1: command = lambda: self.zoom(-1, i, o)
+            if OPTIMIZE and s0 == s1:
+                def command(): self.zoom(-1, i, o)
             else:
                 def command():
                     self.t[self.h] = o
