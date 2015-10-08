@@ -9,6 +9,7 @@ MOVE_RIGHT_SYMBOLS = {'r', 'R',  '1', '→', '»'}
 MOVE_LEFT_SYMBOLS = {'l', 'L', '-1', '←' '«'}
 COMMENT_CHARACTERS = "#;"
 COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
+WILDCARD = "*"
 OPTIMIZE = True
 ZOOM_LIMIT = 99999
 
@@ -79,6 +80,8 @@ class Machine:
 
     def create_command(self, s0, i, o, d, s1):
         """Generate an efficient Python command from the 3 command fields"""
+        if i == WILDCARD: return (o, d, s1)
+        if o == WILDCARD: o = i
         if d in MOVE_RIGHT_SYMBOLS:
             # Optimize for the case where neither state nor input changes:
             if OPTIMIZE and s0 == s1: command = lambda: self.zoom(1, i, o)
@@ -118,16 +121,22 @@ class Machine:
                 # Add line number to exception:
                 raise type(e)(str(e) + " on line " + str(n)) from None
 
-    def halt_symbol(self): return "__halt__"
+    def halt_symbol(self): return None
     def blank_symbol(self): return BLANK
 
     def step(self):
-        command = self.program[(self.s, self.t[self.h])]
-        if command == "__halt__":
-            return None
-        else:
-            command()
-            return True
+        s0, i = self.s, self.t[self.h]
+        command = self.program[(s0, i)]
+        if not command:
+            wildcard_instructions = self.program[(s0, WILDCARD)]
+            if wildcard_instructions:
+                o, d, s1 = wildcard_instructions
+                command = self.create_command(s0, i, o, d, s1)
+                self.program[(s0, i)] = command  # cache generated command
+            else:
+                return None
+        command()
+        return True
 
     def run(self, n=1e309, debug=False):
         if debug: print( self.show_tape() )
