@@ -12,6 +12,8 @@ COMMENT_MATCHER = "[{0}].*".format(COMMENT_CHARACTERS)
 OPTIMIZE = True
 ZOOM_LIMIT = 99999
 
+class TooManySteps(Exception):
+    """The Turing machine exceeded the maximum number of steps."""
 class CodeError(Exception):
     """There's an error in the Turing machine's code."""
     pass
@@ -133,6 +135,7 @@ class Machine:
             if debug: print( self.show_tape() )
             if not self.step(): break
             self.steps += 1
+        if self.steps >= n: raise TooManySteps
 
     def tape(self):
         mystr = ""
