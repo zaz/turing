@@ -179,28 +179,3 @@ def test(program, test_cases, limit_steps=-1):
         if   type(test) is int: output[test] = machine.count(TALLY)
         elif type(test) is str: output[test] = machine.tape()
     return output
-
-
-if __name__ == "__main__":
-    import sys
-
-    # double a string of 1s:
-    program = """
-    0 1 0 l 1
-    1 _ 1 r 2
-    1 1 1 l 1
-    2 0 1 r 0
-    2 1 1 r 2
-    """
-
-    args = [int(i) for i in sys.argv[1:]]
-    print( test(program, set(args)) )
-
-
-
-# Potential test cases:
-#
-# - blank lines in program
-# - commented lines in program
-# - simple programs: doubling, to_binary
-# - r, R, 1; l, L, -1; x, X, 0

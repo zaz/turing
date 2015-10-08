@@ -1,0 +1,4 @@
+Potential test cases:
+
+  -  blank lines in program
+  -  r, R, 1; l, L, -1; x, X, 0
