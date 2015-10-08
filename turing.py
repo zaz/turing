@@ -159,23 +159,3 @@ class Machine:
             if i == tally: n+=1
             if i != tally: break
         return n
-
-
-def test(program, test_cases, limit_steps=-1):
-    """Map each item of test_cases to its output when program is run on it.
-    If a dict is passed, its values will be discarded and the keys mapped as
-    above, so a program can be tested for correctness with:
-
-        test_dict == test(program, test_dict)
-    """
-    output = {}
-    for test in test_cases:
-        # If the input in an integer, convert it into tally:
-        if   type(test) is int: inp = "".join([TALLY] * test)
-        elif type(test) is str: inp = test
-        else: raise TypeError("Test input type should be int or str")
-        machine = Machine(program, inp)
-        machine.run(limit_steps)
-        if   type(test) is int: output[test] = machine.count(TALLY)
-        elif type(test) is str: output[test] = machine.tape()
-    return output
