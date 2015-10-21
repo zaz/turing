@@ -36,7 +36,7 @@ def get_last_padded(coll, n, pad=None):
 
 class Machine:
     """A Turing machine"""
-    def __init__(self, code="", t=[" "], h=0, s="0"):
+    def __init__(self, code="", t=[BLANK], h=0, s="0"):
         self.s = s  # state
         self.h = h  # position of head
         self.t = defaultdict(self.blank_symbol)
@@ -169,7 +169,7 @@ class Machine:
             mystr += self.t[k]
         return mystr.strip("_ ")
 
-    def count(self, tally):
+    def count(self, tally=TALLY):
         """Count the number of consecutive tallys on tape, starting at far left"""
         n=0
         for i in self.tape():
